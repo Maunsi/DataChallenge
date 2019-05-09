@@ -14,11 +14,9 @@ def download_files():
 		final_digits = str(year % 100) if (year % 100 >= 10) else "0"+str(year%100)
 		url = "https://www.bls.gov/lau/laucnty"+final_digits+".txt"
 		outputfile = "Data/Labor Force Data "+str(year)
-		print(url)
 		urllib.request.urlretrieve(url, outputfile)
 	return
 
-#SO FAR THIS IS ALL FOR COUNTY LEVEL DATA:
 def file_len(filename):
 	with open(filename) as file:
 		for i, l in enumerate(file):
@@ -33,14 +31,18 @@ def read_file(filename):
 	with open(filename, 'r') as inputfile:
 		with open(modifiedfilename, 'w') as outputfile:
 			for line in itertools.islice(inputfile, 6, length-3):
-				outputfile.write(re.sub('(\s\s)+', '\t', line))
+				outputfile.write(re.sub('(\s\s)+', '|', line))
 
-
-	df = pd.read_csv(modifiedfilename, sep='	', header=None, names=["LAUS Code", "State FIPS Code", "County FIPS Code", 
+	df = pd.read_csv(modifiedfilename, header=None, sep='|', names=["LAUS Code", "State FIPS Code", "County FIPS Code", 
 		"County Name/State Abbreviation", "Year", "Labor Force", "Employed", "Unemployed Level", "Unemployed Rate"],
 		thousands=',')
-	#with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-	#	print(df)
+	#Tried to use na_values="N.A." to detect a nan value but did not work
+	df["Labor Force"] =pd.to_numeric(df["Labor Force"], errors='coerce')
+	df["Employed"] =pd.to_numeric(df["Employed"], errors='coerce')
+	df["Unemployed Level"] =pd.to_numeric(df["Unemployed Level"], errors='coerce')
+	df["Unemployed Rate"] =pd.to_numeric(df["Unemployed Rate"], errors='coerce')
+	#I cannot average a row with any NaN value
+	df.dropna()
 	return df
 
 
@@ -48,7 +50,7 @@ def read_files():
 	df_all_years = pd.DataFrame(columns=["LAUS Code", "State FIPS Code", "County FIPS Code", 
 		"County Name/State Abbreviation", "Year", "Labor Force", "Employed", "Unemployed Level", "Unemployed Rate"])
 	dataframes = []
-
+	
 	for filepath in glob.iglob("Data/*"):
 		df_year = read_file(filepath)
 		dataframes.append(df_year)
@@ -57,20 +59,32 @@ def read_files():
 	return df_all_years
 
 
-def average_by_county(df_all_years):
-	#df_all_years = df_all_years.sort_values(by=["LAUS Code"])
-	#with pd.option_context('display.max_rows' ,10, 'display.max_columns', None):  # more options can be specified also
-	#	print(df_all_years)
-	mean_df = df_all_years.groupby(["LAUS Code", "State FIPS Code", "County FIPS Code", "County Name/State Abbreviation"]).agg({
+def averages(df_all_years):
+	print("DF ALL YEARS")
+	print(df_all_years.dtypes)
+	mean_county_df = df_all_years.groupby(["LAUS Code", "State FIPS Code", "County FIPS Code", "County Name/State Abbreviation"]).agg({
         'Labor Force': 'mean',  
-        'Employed': 'mean',  
+        'Employed': 'mean',
         'Unemployed Level': 'mean',
         'Unemployed Rate': 'mean',
      }).reset_index()
 
-	mean_df.to_csv("OutputData/Averages By County.txt")
+	mean_state_df = df_all_years.groupby(["LAUS Code", "State FIPS Code"]).agg({
+        'Labor Force': 'mean',  
+        'Employed': 'mean', 
+        'Unemployed Level': 'mean',
+        'Unemployed Rate': 'mean',
+     }).reset_index()
+
+	return mean_county_df, mean_state_df
+
+def write_files(mean_county_df, mean_state_df):
+	mean_county_df.to_csv("OutputData/Averages By County.txt")
+	mean_state_df.to_csv("OutputData/Averages By State.txt")
+
 
 if __name__ == '__main__':
 	download_files()
 	df_all_years = read_files()
-	df_average = average_by_county(df_all_years)
+	mean_county_df, mean_state_df = averages(df_all_years)
+	write_files(mean_county_df, mean_state_df)
