@@ -9,7 +9,7 @@ import datetime as d
 
 
 def download_files():
-	#This idea only works if the files keep this naming structure
+	# This idea only works if the files keep this naming structure
 	for year in range(1990, int(d.datetime.now().year)+1):
 		final_digits = str(year % 100) if (year % 100 >= 10) else "0"+str(year%100)
 		url = "https://www.bls.gov/lau/laucnty"+final_digits+".txt"
@@ -28,6 +28,8 @@ def file_len(filename):
 def read_file(filename):
 	# Convert spaces to tabs to make the conversion to dataframe easier
 
+	# Instead of writing a modified file, one could load the complete file to memory. This is just in case it is too large 
+	# to hold in memory
 	modifiedfilename = "Modified"+filename
 	length = file_len(filename)
 	with open(filename, 'r') as inputfile:
@@ -35,7 +37,8 @@ def read_file(filename):
 			for line in itertools.islice(inputfile, 6, length-3):
 				outputfile.write(re.sub('(\s\s)+', '\t', line))
 
-	df = pd.read_csv(modifiedfilename, header=None, sep='\t', names=["LAUS Code", "State FIPS Code", "County FIPS Code", 
+
+	df = pd.read_csv(s, header=None, sep='\t', names=["LAUS Code", "State FIPS Code", "County FIPS Code", 
 		"County Name/State Abbreviation", "Year", "Labor Force", "Employed", "Unemployed Level", "Unemployed Rate"],
 		thousands=',')
 	
