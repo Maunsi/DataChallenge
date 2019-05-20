@@ -38,7 +38,7 @@ def read_file(filename):
 				outputfile.write(re.sub('(\s\s)+', '\t', line))
 
 
-	df = pd.read_csv(s, header=None, sep='\t', names=["LAUS Code", "State FIPS Code", "County FIPS Code", 
+	df = pd.read_csv(modifiedfilename, header=None, sep='\t', names=["LAUS Code", "State FIPS Code", "County FIPS Code", 
 		"County Name/State Abbreviation", "Year", "Labor Force", "Employed", "Unemployed Level", "Unemployed Rate"],
 		thousands=',')
 	
