@@ -100,9 +100,6 @@ def write_files(mean_county_df, mean_state_df):
 	mean_state_df["State Name"] = mean_state_df["State FIPS Code"].map(state_names)
 	mean_state_df.to_csv("OutputData/Averages By State.txt")
 
-	print(mean_county_df.loc[mean_county_df["State FIPS Code"]==1].mean())
-	print(mean_state_df.loc[mean_state_df["State FIPS Code"]==1])
-
 
 if __name__ == '__main__':
 	download_files()
